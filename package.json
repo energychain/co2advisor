@@ -1,6 +1,6 @@
 {
   "name": "co2advisor",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "The CO2 Advisor API provides real-time insights into the carbon footprint per kilowatt-hour of electricity for various locations in Germany.",
   "main": "co2advisor.js",
   "bin": {

@@ -2,23 +2,34 @@
 
 Ein Express.js-basierter Microservice zur Visualisierung von CO2-Prognosen für den Stromverbrauch in Deutschland. Der Service nutzt die Corrently API, um stündliche CO2-Emissionswerte für den nächsten Tag basierend auf der Postleitzahl anzuzeigen.
 
+## Live Demo
+
+Der Service kann unter folgender URL getestet werden:
+[https://co2advisor.corrently.io](https://co2advisor.corrently.io)
+
 ## Features
 
 - Webbasierte Benutzeroberfläche mit PLZ-Eingabe
+- Mehrere Ausgabeformate:
+  - Interaktive HTML-Ansicht
+  - Direkte PNG-Bildausgabe
+  - JSON-API für maschinelle Verarbeitung
 - Visualisierung der CO2-Werte als Balkendiagramm
 - Farbcodierung der Werte (grün/gelb/rot) basierend auf Empfehlungen
-- REST-API für maschinelle Verarbeitung
 - Responsive Design
-- Base64-kodierte Bildausgabe
+- Base64-kodierte Bildausgabe für E-Mail-Integration
+- 5-Minuten-Caching für optimale Performance
+- Konfigurierbar über Umgebungsvariablen
 
 ## Installation
 
 ```bash
-# Repository klonen
+# Option 1: Globale Installation
+npm install -g co2advisor
+
+# Option 2: Repository klonen
 git clone https://github.com/yourusername/co2advisor.git
 cd co2advisor
-
-# Abhängigkeiten installieren
 npm install
 ```
 
@@ -32,24 +43,36 @@ npm install
     "chart.js": "^4.4.1",
     "chartjs-adapter-moment": "^1.0.1",
     "corrently-api": "^2.0.3",
-    "moment": "^2.29.4"
+    "moment": "^2.29.4",
+    "dotenv": "^16.0.3"
   }
 }
 ```
 
 ## Konfiguration
 
-Die Anwendung verwendet standardmäßig den Port 3000. Dies kann in der Datei über die `port`-Variable angepasst werden.
+### Umgebungsvariablen
 
-Der [Corrently API-Key](https://console.corrently.io/) (appid) ist im Code hinterlegt und kann bei Bedarf angepasst werden:
+Die Anwendung kann über folgende Umgebungsvariablen konfiguriert werden:
 
-```javascript
-const appid = "0x245f82B51793a63049E42b434510508a003621b4";
+```bash
+PORT=3000                  # Standard: 3000
+APPID=your-corrently-appid # Optional: Standard-AppID wird verwendet
 ```
+Tipp: Token und APPID können unter https://console.corrently.io erstellt werden.
+
+Diese können auch in einer `.env` Datei definiert werden.
 
 ## Verwendung
 
-### Server starten
+### Als globales Kommando
+
+Nach der globalen Installation:
+```bash
+co2advisor
+```
+
+### Als lokale Installation
 
 ```bash
 node index.js
@@ -64,14 +87,21 @@ Nach dem Start ist der Service unter `http://localhost:3000` erreichbar.
    - Methode: `GET`
    - Beschreibung: Zeigt ein Eingabeformular für die Postleitzahl
 
-2. **Visualisierung**
+2. **HTML-Visualisierung**
    - URL: `/chart?zipcode=<PLZ>`
    - Methode: `GET`
    - Parameter: `zipcode` (Postleitzahl)
    - Beispiel: `/chart?zipcode=69502`
    - Beschreibung: Zeigt die CO2-Prognose als interaktives Diagramm
 
-3. **REST-API**
+3. **Direkter PNG-Download**
+   - URL: `/chart/<PLZ>.png`
+   - Methode: `GET`
+   - Beispiel: `/chart/69502.png`
+   - Beschreibung: Liefert das Diagramm als PNG-Datei
+   - Cache: 5 Minuten
+
+4. **REST-API**
    - URL: `/api/chart?zipcode=<PLZ>`
    - Methode: `GET`
    - Parameter: `zipcode` (Postleitzahl)
@@ -115,7 +145,22 @@ Der Service wurde mit folgenden Browsern getestet:
 co2advisor/
 ├── index.js           # Hauptanwendung
 ├── package.json       # Projektabhängigkeiten
+├── .env              # Umgebungsvariablen (optional)
 └── README.md         # Dokumentation
+```
+
+### Lokale Entwicklung
+
+```bash
+# Repository klonen
+git clone https://github.com/energychain/co2advisor.git
+
+# Abhängigkeiten installieren
+cd co2advisor
+npm install
+
+# Entwicklungsserver starten
+npm start
 ```
 
 ## Lizenz
@@ -128,7 +173,10 @@ Beiträge sind willkommen! Bitte erstellen Sie einen Pull Request oder ein Issue
 
 ## Support
 
-Bei Fragen oder Problemen erstellen Sie bitte ein Issue im GitHub Repository.
+Bei Fragen oder Problemen können Sie:
+- Ein Issue im GitHub Repository erstellen
+- Den Service unter https://co2advisor.corrently.io testen
+- Die API-Dokumentation unter https://api.corrently.io/v2.0/docs konsultieren
 
 ## Danksagung
 

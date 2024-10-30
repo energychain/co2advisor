@@ -21,6 +21,134 @@ function getColorForAdvice(advice) {
     }
 }
 
+async function createChartBuffer(zipcode) {
+    try {
+        const client = new CorrentlyClient({
+            baseUrl: 'https://api.corrently.io',
+            appid: appid
+        });
+        
+        const advisory = await client.co2advisor.getAdvice(zipcode);    
+        let data = [];
+        let now = new Date().getTime();
+        let tomorrow = (Math.floor(now/86400000) + 1)*86400000;
+        let dayafter = tomorrow+86400000;
+        
+        for(let i=0;i<advisory.data.length;i++) {
+            if( (advisory.data[i].time >= tomorrow) && (advisory.data[i].time <= dayafter)) {
+                data.push(advisory.data[i]);
+            }
+        }
+        
+        if (data.length === 0) {
+            throw new Error('Keine Daten für den angegebenen Zeitraum verfügbar');
+        }
+
+        // Neues Canvas mit festgelegter Größe
+        const canvas = createCanvas(800, 600);
+        const ctx = canvas.getContext('2d');
+
+        // Hintergrund weiß machen
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 800, 600);
+        
+        // Chart konfigurieren
+        Chart.defaults.font.family = 'Arial';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#000000';
+        
+        const configuration = {
+            type: 'bar',
+            data: {
+                labels: data.map(d => moment(d.time)),
+                datasets: [{
+                    label: 'CO2 Wert',
+                    data: data.map(d => d.co2),
+                    backgroundColor: data.map(d => getColorForAdvice(d.advice))
+                }]
+            },
+            options: {
+                devicePixelRatio: 1,
+                responsive: false,
+                animation: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'DD.MM. HH:mm'
+                            }
+                        },
+                        grid: {
+                            color: '#dddddd'
+                        },
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: false,
+                            callback: function(value, index, values) {                                  
+                                const date = moment(1*data[index].time);                                       
+                                return date.format('DD.MM. HH:mm');
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#dddddd'
+                        },
+                        title: {
+                            display: true,
+                            text: 'CO2 (g/kWh)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    },
+                    title: {
+                        display: true,
+                        text: `CO2 Prognose für ${zipcode}`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: 20
+                    }
+                }
+            }
+        };
+
+        // Chart erstellen
+        const chart = new Chart(ctx, configuration);
+        
+        // Warten bis Rendering abgeschlossen ist
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Buffer erstellen
+        const buffer = canvas.toBuffer('image/png', {
+            compressionLevel: 6,
+            filters: canvas.PNG_ALL_FILTERS,
+            resolution: 96
+        });
+
+        // Aufräumen
+        chart.destroy();
+        
+        return buffer;
+    } catch (error) {
+        console.error('Error in createChartBuffer:', error);
+        throw error;
+    }
+}
 async function createChart(zipcode) {
     const client = new CorrentlyClient({
         baseUrl: 'https://api.corrently.io',
@@ -102,11 +230,96 @@ async function createChart(zipcode) {
     });
 
     const buffer = canvas.toBuffer('image/png');
+
     advisory.chart = `data:image/png;base64,${buffer.toString('base64')}`;
     chart.destroy();
     return advisory;
 }
 
+async function createChartBuffer(zipcode) {
+    const client = new CorrentlyClient({
+        baseUrl: 'https://api.corrently.io',
+        appid: appid
+    });
+    
+    const advisory = await client.co2advisor.getAdvice(zipcode);    
+    let data = [];
+    let now = new Date().getTime();
+    let tomorrow = (Math.floor(now/86400000) + 1)*86400000;
+    let dayafter = tomorrow+86400000;
+    
+    for(let i=0;i<advisory.data.length;i++) {
+        if( (advisory.data[i].time >= tomorrow) && (advisory.data[i].time <= dayafter)) {
+            data.push(advisory.data[i]);
+        }
+    }
+    
+    const width = 800;
+    const height = 600;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => moment(d.time)),
+            datasets: [{
+                label: 'CO2 Wert',
+                data: data.map(d => ({x: moment(d.time), y: d.co2})),
+                backgroundColor: data.map(d => getColorForAdvice(d.advice))
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'DD.MM. HH:mm'
+                        }
+                    },
+                    ticks: {
+                        maxRotation: 0,
+                        autoSkip: false,
+                        callback: function(value, index, values) {                                  
+                            const date = moment(1*data[index].time);                                       
+                            return date.format('DD.MM. HH:mm');
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'CO2 (g/kWh)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return moment(context[0].parsed.x).format('DD.MM.YYYY, HH:mm [Uhr]');
+                        },
+                        label: function(context) {
+                            return `CO2: ${context.parsed.y} g/kWh`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const buffer = canvas.toBuffer('image/png');    
+    chart.destroy();
+    return buffer;
+}
 // Startseite mit Formular
 app.get('/', (req, res) => {
     const html = `
@@ -150,6 +363,12 @@ app.get('/', (req, res) => {
                     background-color: #f5f5f5;
                     border-radius: 4px;
                 }
+                .endpoint {
+                    background: #fff;
+                    padding: 10px;
+                    border-radius: 4px;
+                    margin: 5px 0;
+                }
             </style>
         </head>
         <body>
@@ -167,18 +386,57 @@ app.get('/', (req, res) => {
 
                 <div class="api-info">
                     <h2>API Nutzung</h2>
-                    <p>Die Daten können auch über die API abgerufen werden:</p>
-                    <ul>
-                        <li><strong>Visualisierung:</strong> /chart?zipcode=XXXXX</li>
-                        <li><strong>JSON-Daten:</strong> /api/chart?zipcode=XXXXX</li>
-                    </ul>
-                    <p>Beispiel: <a href="/chart?zipcode=69502">/chart?zipcode=69502</a></p>
+                    <p>Die Daten können über verschiedene Endpunkte abgerufen werden:</p>
+                    
+                    <h3>1. Webansicht</h3>
+                    <div class="endpoint">
+                        <strong>URL:</strong> /chart?zipcode=XXXXX<br>
+                        <strong>Beispiel:</strong> <a href="/chart?zipcode=69502">/chart?zipcode=69502</a><br>
+                        <strong>Format:</strong> HTML-Seite mit eingebettetem Chart
+                    </div>
+                    
+                    <h3>2. Direkter PNG-Download</h3>
+                    <div class="endpoint">
+                        <strong>URL:</strong> /chart/XXXXX.png<br>
+                        <strong>Beispiel:</strong> <a href="/chart/69502.png">/chart/69502.png</a><br>
+                        <strong>Format:</strong> PNG-Bild
+                    </div>
+                    
+                    <h3>3. REST API</h3>
+                    <div class="endpoint">
+                        <strong>URL:</strong> /api/chart?zipcode=XXXXX<br>
+                        <strong>Beispiel:</strong> <a href="/api/chart?zipcode=69502">/api/chart?zipcode=69502</a><br>
+                        <strong>Format:</strong> JSON mit Base64-kodiertem Chart
+                    </div>
                 </div>
             </div>
         </body>
         </html>
     `;
     res.send(html);
+});
+
+app.get('/chart/:zipcode.png', async (req, res) => {
+    try {
+        const zipcode = req.params.zipcode;
+        
+        if (!zipcode || !/^\d{5}$/.test(zipcode)) {
+            return res.status(400).send('Ungültige Postleitzahl');
+        }
+
+        const buffer = await createChartBuffer(zipcode);
+        
+        // Cache-Header setzen
+        res.setHeader('Cache-Control', 'public, max-age=300'); // 5 Minuten Cache
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Length', buffer.length);
+        res.setHeader('Content-Disposition', `inline; filename="co2-prognose-${zipcode}.png"`);
+        
+        res.send(buffer);
+    } catch (error) {
+        console.error('Fehler bei PNG-Generierung:', error);
+        res.status(500).send('Fehler bei der Generierung des Charts');
+    }
 });
 
 // API Routen
