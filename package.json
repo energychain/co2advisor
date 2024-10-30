@@ -1,0 +1,35 @@
+{
+  "name": "co2advisor",
+  "version": "1.0.0",
+  "description": "The CO2 Advisor API provides real-time insights into the carbon footprint per kilowatt-hour of electricity for various locations in Germany.",
+  "main": "co2advisor.js",
+  "scripts": {
+    "start": "node ./co2advisor.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/energychain/co2advisor.git"
+  },
+  "keywords": [
+    "co2advisor",
+    "grid",
+    "emission",
+    "germany",
+    "co2"
+  ],
+  "author": "STROMDAO GmbH <dev@stromdao.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/energychain/co2advisor/issues"
+  },
+  "homepage": "https://console.corrently.io/co2advisor.html",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "chart.js": "^4.4.1",
+    "chartjs-adapter-moment": "^1.0.1",
+    "corrently-api": "^2.0.3",
+    "express": "^4.18.2",
+    "moment": "^2.29.4"
+ }
+}
