@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express');
 const { createCanvas } = require('canvas');
 const chartjsadaptermoment = require("chartjs-adapter-moment");
@@ -6,8 +7,8 @@ const CorrentlyClient = require('corrently-api');
 const moment = require('moment');
 
 const app = express();
-const port = 3000;
-const appid = "0x245f82B51793a63049E42b434510508a003621b4";
+const port = process.env.PORT || 3000;
+const appid = process.env.APPID || "0x245f82B51793a63049E42b434510508a003621b4";
 
 function getColorForAdvice(advice) {
     switch(advice.toLowerCase()) {
